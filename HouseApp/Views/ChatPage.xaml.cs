@@ -18,7 +18,7 @@ public partial class ChatPage : ContentPage
         base.OnAppearing();
         
         // Reload messages when page appears
-        if (_viewModel.LoadPreviousMessagesCommand?. CanExecute(null) == true)
+        if (_viewModel.LoadPreviousMessagesCommand?.CanExecute(null) == true)
         {
             await _viewModel.LoadPreviousMessagesCommand.ExecuteAsync(null);
         }
@@ -39,7 +39,7 @@ public partial class ChatPage : ContentPage
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error scrolling:  {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Error scrolling: {ex.Message}");
         }
     }
 
