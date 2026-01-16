@@ -36,7 +36,8 @@
                         </LinearGradientBrush>
                     </Grid.Background>
 
-                    <VerticalStackLayout Spacing="10">
+                    <!-- Content when payment exists -->
+                    <VerticalStackLayout Spacing="10" IsVisible="{Binding HasNextPayment}">
 
                         <!-- Top row: title + status chip -->
                         <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
@@ -52,14 +53,14 @@
                        HasShadow="False"
                        BackgroundColor="#FFFFFF"
                        Opacity="0.22">
-                                <Label Text="{Binding NextPayment.Status}"
+                                <Label Text="{Binding NextPaymentStatus}"
                            FontSize="11"
                            FontAttributes="Bold"
                            TextColor="White" />
                             </Frame>
                         </Grid>
 
-                        <Label Text="{Binding NextPayment.Amount, StringFormat='€{0:N2}'}"
+                        <Label Text="{Binding NextPaymentAmount}"
                    FontSize="34"
                    FontAttributes="Bold"
                    TextColor="White" />
@@ -71,7 +72,7 @@
                        HasShadow="False"
                        BackgroundColor="#FFFFFF"
                        Opacity="0.18">
-                                <Label Text="{Binding NextPayment.DueDate, StringFormat='Due: {0:MMM dd}'}"
+                                <Label Text="{Binding NextPaymentDueDate}"
                            FontSize="12"
                            TextColor="White" />
                             </Frame>
@@ -92,6 +93,23 @@
                         </HorizontalStackLayout>
 
                     </VerticalStackLayout>
+
+                    <!-- Fallback content when no payment exists -->
+                    <VerticalStackLayout Spacing="10" IsVisible="{Binding HasNoNextPayment}" 
+                                        HorizontalOptions="Center" 
+                                        VerticalOptions="Center">
+                        <Label Text="No Pending Payments"
+                               FontSize="20"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" />
+                        <Label Text="You're all caught up! 🎉"
+                               FontSize="14"
+                               TextColor="White"
+                               Opacity="0.9"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+
                 </Grid>
             </Frame>
 

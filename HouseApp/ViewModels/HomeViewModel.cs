@@ -27,11 +27,28 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty]
     private Payment? nextPayment;
 
+    // Notify UI when NextPayment changes
+    partial void OnNextPaymentChanged(Payment? value)
+    {
+        OnPropertyChanged(nameof(HasNextPayment));
+        OnPropertyChanged(nameof(HasNoNextPayment));
+        OnPropertyChanged(nameof(NextPaymentAmount));
+        OnPropertyChanged(nameof(NextPaymentStatus));
+        OnPropertyChanged(nameof(NextPaymentDueDate));
+    }
+
     [ObservableProperty]
     private decimal totalDue;
 
     [ObservableProperty]
     private bool isLoading;
+
+    // Helper properties for UI bindings
+    public bool HasNextPayment => NextPayment != null;
+    public bool HasNoNextPayment => NextPayment == null;
+    public string NextPaymentAmount => NextPayment != null ? $"€{NextPayment.Amount:N2}" : "€0.00";
+    public string NextPaymentStatus => NextPayment?.Status.ToString() ?? "No Payment";
+    public string NextPaymentDueDate => NextPayment != null ? $"Due: {NextPayment.DueDate:MMM dd}" : "No due date";
 
     public HomeViewModel(AuthService authService, HouseService houseService, PaymentService paymentService)
     {
