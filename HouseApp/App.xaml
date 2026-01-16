@@ -23,8 +23,6 @@
             <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <converters:BoolToObjectConverter x:Key="BoolToObjectConverter" />
             <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
-            <converters:BoolToMessageBackgroundConverter x:Key="BoolToMessageBackgroundConverter" />
-            <converters:BoolToMessageBorderConverter x:Key="BoolToMessageBorderConverter" />
 
         </ResourceDictionary>
     </Application.Resources>

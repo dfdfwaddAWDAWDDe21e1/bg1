@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 
 namespace HouseApp.Services;
 
@@ -83,19 +85,18 @@ public class ApiService
         }
     }
 
-    public async Task<TResponse?> PutAsync<TResponse>(string endpoint, object data)
+    public async Task<bool> PutAsync<TRequest>(string endpoint, TRequest data)
     {
         try
         {
             await SetAuthorizationHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync(endpoint, data);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<TResponse>();
+            return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"PUT Error: {ex.Message}");
-            return default;
+            return false;
         }
     }
 
@@ -114,7 +115,6 @@ public class ApiService
             return default;
         }
     }
-
 
     public async Task<bool> DeleteAsync(string endpoint)
     {
