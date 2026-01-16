@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm. ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HouseApp.Services;
 using HouseApp.Models;
@@ -38,7 +38,7 @@ public partial class ChatViewModel : ObservableObject
         _apiService = apiService;
         
         _chatService.MessageReceived += OnMessageReceived;
-        _chatService.ConnectionStatusChanged += OnConnectionStatusChanged;
+        _chatService.ConnectionStatusChanged += HandleConnectionStatusChanged;
         
         _ = InitializeChat();
     }
@@ -97,7 +97,7 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System. Diagnostics.Debug.WriteLine($"Chat initialization error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Chat initialization error: {ex.Message}");
             ConnectionStatus = $"Error: {ex.Message}";
             IsConnected = false;
         }
@@ -114,23 +114,23 @@ public partial class ChatViewModel : ObservableObject
 
             var messagesList = await _apiService.GetAsync<List<MessageDto>>($"/api/houses/{_currentHouseId}/messages");
             
-            System.Diagnostics.Debug.WriteLine($"Loaded {messagesList?.Count ??  0} messages");
+            System.Diagnostics.Debug.WriteLine($"Loaded {messagesList?.Count ?? 0} messages");
 
             if (messagesList != null && messagesList.Any())
             {
                 Messages.Clear();
                 
-                foreach (var msg in messagesList. OrderBy(m => m.Timestamp))
+                foreach (var msg in messagesList.OrderBy(m => m.Timestamp))
                 {
-                    System.Diagnostics.Debug.WriteLine($"Message: {msg.SenderName}:  {msg.MessageText}");
+                    System.Diagnostics.Debug.WriteLine($"Message: {msg.SenderName}: {msg.MessageText}");
                     
                     Messages.Add(new ChatMessageViewModel
                     {
                         Id = msg.Id,
                         SenderId = msg.SenderId,
-                        SenderName = msg. SenderName,
+                        SenderName = msg.SenderName,
                         MessageText = msg.MessageText,
-                        Timestamp = msg. Timestamp,
+                        Timestamp = msg.Timestamp,
                         IsFromCurrentUser = msg.SenderId == _currentUserId
                     });
                 }
@@ -145,8 +145,8 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System. Diagnostics.Debug.WriteLine($"Error loading messages: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex. StackTrace}");
+            System.Diagnostics.Debug.WriteLine($"Error loading messages: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 
@@ -154,7 +154,7 @@ public partial class ChatViewModel : ObservableObject
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            System.Diagnostics.Debug.WriteLine($"Message received: {message.SenderName}:  {message.MessageText}");
+            System.Diagnostics.Debug.WriteLine($"Message received: {message.SenderName}: {message.MessageText}");
 
             // Check if message already exists (avoid duplicates)
             if (!Messages.Any(m => m.Id == message.Id && message.Id > 0))
@@ -163,9 +163,9 @@ public partial class ChatViewModel : ObservableObject
                 {
                     Id = message.Id,
                     SenderId = message.SenderId,
-                    SenderName = message. SenderName,
+                    SenderName = message.SenderName,
                     MessageText = message.MessageText,
-                    Timestamp = message. Timestamp,
+                    Timestamp = message.Timestamp,
                     IsFromCurrentUser = message.SenderId == _currentUserId
                 });
 
@@ -174,13 +174,13 @@ public partial class ChatViewModel : ObservableObject
         });
     }
 
-    private void OnConnectionStatusChanged(string status)
+    private void HandleConnectionStatusChanged(string status)
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
             ConnectionStatus = status;
             IsConnected = status == "Connected";
-            System.Diagnostics.Debug. WriteLine($"Connection status:  {status}");
+            System.Diagnostics.Debug.WriteLine($"Connection status: {status}");
         });
     }
 
@@ -194,7 +194,7 @@ public partial class ChatViewModel : ObservableObject
 
         if (!_chatService.IsConnected)
         {
-            await Shell.Current.DisplayAlert("Error", "Not connected to chat.  Please wait.. .", "OK");
+            await Shell.Current.DisplayAlert("Error", "Not connected to chat. Please wait...", "OK");
             return;
         }
 
@@ -204,14 +204,15 @@ public partial class ChatViewModel : ObservableObject
             return;
         }
 
+        var messageText = NewMessage;
+        
         try
         {
-            var messageText = NewMessage;
-            NewMessage = string. Empty; // Clear input immediately
+            NewMessage = string.Empty; // Clear input immediately
 
             System.Diagnostics.Debug.WriteLine($"Sending message: {messageText}");
 
-            await _chatService.SendMessage(_currentHouseId, messageText);
+            await _chatService.SendMessageAsync(_currentHouseId, messageText);
             
             System.Diagnostics.Debug.WriteLine("Message sent successfully");
             
@@ -220,8 +221,13 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error sending message: {ex.Message}");
-            await Shell.Current.DisplayAlert("Error", $"Failed to send:  {ex.Message}", "OK");
-            NewMessage = messageText; // Restore message on error
+            await Shell.Current.DisplayAlert("Error", $"Failed to send: {ex.Message}", "OK");
+            
+            // Only restore if user hasn't typed a new message
+            if (string.IsNullOrEmpty(NewMessage))
+            {
+                NewMessage = messageText;
+            }
         }
     }
 }
@@ -239,47 +245,11 @@ public partial class ChatMessageViewModel :  ObservableObject
     private string senderName = string.Empty;
 
     [ObservableProperty]
-    private string messageText = string. Empty;
+    private string messageText = string.Empty;
 
     [ObservableProperty]
     private DateTime timestamp;
 
     [ObservableProperty]
     private bool isFromCurrentUser;
-}
-public ChatViewModel(ChatService chatService, ApiService apiService)
-{
-    _chatService = chatService;
-    _apiService = apiService;
-    
-    // === DEBUG:  Add test messages ===
-    System.Diagnostics.Debug.WriteLine("=== ADDING TEST MESSAGES ===");
-    
-    Messages. Add(new ChatMessageViewModel
-    {
-        Id = 1,
-        SenderId = 1,
-        SenderName = "Test User 1",
-        MessageText = "This is test message ONE - should be WHITE on PURPLE",
-        Timestamp = DateTime.Now. AddMinutes(-10),
-        IsFromCurrentUser = false
-    });
-    
-    Messages.Add(new ChatMessageViewModel
-    {
-        Id = 2,
-        SenderId = 2,
-        SenderName = "Test User 2",
-        MessageText = "This is test message TWO - also WHITE on PURPLE",
-        Timestamp = DateTime.Now,
-        IsFromCurrentUser = true
-    });
-    
-    System.Diagnostics.Debug.WriteLine($"Messages count: {Messages.Count}");
-    // === END DEBUG ===
-    
-    _chatService.MessageReceived += OnMessageReceived;
-    _chatService.ConnectionStatusChanged += OnConnectionStatusChanged;
-    
-    _ = InitializeChat();
 }

@@ -8,6 +8,7 @@ public partial class ProfileViewModel : ObservableObject
 {
     private readonly AuthService _authService;
     private readonly UserSession _userSession;
+    private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
     private string firstName = string.Empty;
@@ -24,10 +25,11 @@ public partial class ProfileViewModel : ObservableObject
     [ObservableProperty]
     private bool isLoading;
 
-    public ProfileViewModel(AuthService authService, UserSession userSession)
+    public ProfileViewModel(AuthService authService, UserSession userSession, IServiceProvider serviceProvider)
     {
         _authService = authService;
         _userSession = userSession;
+        _serviceProvider = serviceProvider;
         LoadUserData();
     }
 
@@ -70,6 +72,9 @@ public partial class ProfileViewModel : ObservableObject
 
         await _authService.LogoutAsync();
         _userSession.Clear();
-        await Shell.Current.GoToAsync("//login");
+        
+        // Switch back to AppShell which contains the login route
+        var appShell = _serviceProvider.GetRequiredService<AppShell>();
+        Application.Current.MainPage = appShell;
     }
 }

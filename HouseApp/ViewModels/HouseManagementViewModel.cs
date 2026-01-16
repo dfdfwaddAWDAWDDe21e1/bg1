@@ -1,88 +1,44 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HouseApp.Models;
 using HouseApp.Services;
-using HouseApp.DTOs;
-using System.Collections.ObjectModel;
+using HouseApp.Models;
 
 namespace HouseApp.ViewModels;
 
 public partial class HouseManagementViewModel : ObservableObject
 {
-    private readonly ApiService _apiService;
+    private readonly HouseService _houseService;
+    private readonly UserSession _userSession;
 
     [ObservableProperty]
-    private int houseId;
+    private ObservableCollection<HouseDto> houses = new();
 
     [ObservableProperty]
-    private string houseName = string.Empty;
-
-    [ObservableProperty]
-    private string address = string.Empty;
-
-    [ObservableProperty]
-    private decimal monthlyRent;
-
-    [ObservableProperty]
-    private decimal utilitiesCost;
-
-    [ObservableProperty]
-    private decimal waterBillCost;
-
-    [ObservableProperty]
-    private int maxOccupants = 1;
-
-    [ObservableProperty]
-    private string? housePassword;
-
-    [ObservableProperty]
-    private string? houseCode;
-
-    [ObservableProperty]
-    private ObservableCollection<TenantDto> tenants = new();
+    private HouseDto? selectedHouse;
 
     [ObservableProperty]
     private bool isLoading;
 
-    [ObservableProperty]
-    private bool isEditMode;
-
-    [ObservableProperty]
-    private string studentEmail = string.Empty;
-
-    public HouseManagementViewModel(ApiService apiService)
+    public HouseManagementViewModel(HouseService houseService, UserSession userSession)
     {
-        _apiService = apiService;
+        _houseService = houseService;
+        _userSession = userSession;
     }
 
     [RelayCommand]
-    private async Task LoadHouseDetails()
+    private async Task LoadHousesAsync()
     {
-        if (HouseId <= 0) return;
-
+        IsLoading = true;
+        
         try
         {
-            IsLoading = true;
-
-            var house = await _apiService.GetAsync<HouseDto>($"/api/houses/{HouseId}");
+            var loadedHouses = await _houseService.GetLandlordHousesAsync(_userSession.UserId);
+            Houses = new ObservableCollection<HouseDto>(loadedHouses ?? new List<HouseDto>());
             
-            if (house != null)
+            if (Houses.Any())
             {
-                HouseName = house.Name;
-                Address = house.Address;
-                MonthlyRent = house.MonthlyRent;
-                UtilitiesCost = house.UtilitiesCost;
-                WaterBillCost = house.WaterBillCost;
-                MaxOccupants = house.MaxOccupants;
-                HousePassword = house.Password;
-                HouseCode = house.HouseCode;
+                SelectedHouse = Houses.First();
             }
-
-            await LoadTenants();
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlert("Error", $"Failed to load house: {ex.Message}", "OK");
         }
         finally
         {
@@ -91,90 +47,37 @@ public partial class HouseManagementViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadTenants()
+    private async Task SaveChangesAsync()
     {
+        if (SelectedHouse == null) return;
+        
+        IsLoading = true;
+        
         try
         {
-            var tenantsList = await _apiService.GetAsync<List<TenantDto>>($"/api/houses/{HouseId}/tenants");
+            var success = await _houseService.UpdateHouseAsync(SelectedHouse);
             
-            if (tenantsList != null)
+            if (success)
             {
-                Tenants = new ObservableCollection<TenantDto>(tenantsList);
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Error loading tenants: {ex.Message}");
-        }
-    }
-
-    [RelayCommand]
-    private async Task SaveHouse()
-    {
-        if (string.IsNullOrWhiteSpace(HouseName) || string.IsNullOrWhiteSpace(Address))
-        {
-            await Shell.Current.DisplayAlert("Error", "Please fill all required fields", "OK");
-            return;
-        }
-
-        try
-        {
-            IsLoading = true;
-
-            if (IsEditMode)
-            {
-                var updateDto = new UpdateHouseDto
-                {
-                    Name = HouseName,
-                    Address = Address,
-                    MonthlyRent = MonthlyRent,
-                    UtilitiesCost = UtilitiesCost,
-                    WaterBillCost = WaterBillCost,
-                    MaxOccupants = MaxOccupants,
-                    Password = HousePassword
-                };
-
-                var response = await _apiService.PutAsync<HouseDto>($"/api/houses/{HouseId}", updateDto);
-
-                if (response != null)
-                {
-                    await Shell.Current.DisplayAlert("Success", "House updated successfully", "OK");
-                }
+                await Application.Current!.MainPage!.DisplayAlert(
+                    "Success", 
+                    "Changes saved successfully!", 
+                    "OK");
             }
             else
             {
-                var landlordIdStr = await SecureStorage.GetAsync(Constants.UserIdKey);
-                if (string.IsNullOrEmpty(landlordIdStr) || !int.TryParse(landlordIdStr, out int landlordId))
-                {
-                    await Shell.Current.DisplayAlert("Session Expired", "Please log in again to continue.", "OK");
-                    await Shell.Current.GoToAsync("//login");
-                    return;
-                }
-
-                var createDto = new HouseDto
-                {
-                    Name = HouseName,
-                    Address = Address,
-                    MonthlyRent = MonthlyRent,
-                    UtilitiesCost = UtilitiesCost,
-                    WaterBillCost = WaterBillCost,
-                    MaxOccupants = MaxOccupants,
-                    Password = HousePassword,
-                    LandlordId = landlordId
-                };
-
-                var response = await _apiService.PostAsync<HouseDto, HouseDto>("/api/houses", createDto);
-
-                if (response != null)
-                {
-                    await Shell.Current.DisplayAlert("Success", "House created successfully", "OK");
-                    await Shell.Current.GoToAsync("..");
-                }
+                await Application.Current!.MainPage!.DisplayAlert(
+                    "Error", 
+                    "Failed to save changes. Please try again.", 
+                    "OK");
             }
         }
         catch (Exception ex)
         {
-            await Shell.Current.DisplayAlert("Error", $"Failed to save house: {ex.Message}", "OK");
+            await Application.Current!.MainPage!.DisplayAlert(
+                "Error", 
+                $"An error occurred: {ex.Message}", 
+                "OK");
         }
         finally
         {
@@ -183,72 +86,47 @@ public partial class HouseManagementViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task AddTenant()
+    private async Task DeleteHouseAsync()
     {
-        if (string.IsNullOrWhiteSpace(StudentEmail))
-        {
-            await Shell.Current.DisplayAlert("Error", "Please enter student email", "OK");
-            return;
-        }
+        if (SelectedHouse == null) return;
 
-        try
-        {
-            IsLoading = true;
-
-            // Find student by email
-            var student = await _apiService.GetAsync<UserDto>($"/api/auth/users/search?email={StudentEmail}");
-
-            if (student == null || student.UserType != UserType.Student)
-            {
-                await Shell.Current.DisplayAlert("Error", "Student not found", "OK");
-                return;
-            }
-
-            // Add tenant
-            var success = await _apiService.PostAsync($"/api/houses/{HouseId}/tenants/{student.Id}", (object?)null);
-
-            if (success)
-            {
-                await Shell.Current.DisplayAlert("Success", $"Added {student.FirstName} {student.LastName} to house", "OK");
-                StudentEmail = string.Empty;
-                await LoadTenants();
-            }
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlert("Error", $"Failed to add tenant: {ex.Message}", "OK");
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task RemoveTenant(TenantDto tenant)
-    {
-        if (tenant == null) return;
-
-        var confirm = await Shell.Current.DisplayAlert(
-            "Confirm", 
-            $"Remove {tenant.Name} from house?", 
-            "Yes", 
+        var confirm = await Application.Current!.MainPage!.DisplayAlert(
+            "Confirm Delete",
+            $"Are you sure you want to delete {SelectedHouse.Address}?",
+            "Yes",
             "No");
 
         if (!confirm) return;
 
+        IsLoading = true;
+
         try
         {
-            IsLoading = true;
+            var success = await _houseService.DeleteHouseAsync(SelectedHouse.HouseId);
 
-            await _apiService.DeleteAsync($"/api/houses/{HouseId}/tenants/{tenant.UserId}");
-            
-            await Shell.Current.DisplayAlert("Success", "Tenant removed", "OK");
-            await LoadTenants();
+            if (success)
+            {
+                await Application.Current!.MainPage!.DisplayAlert(
+                    "Success",
+                    "House deleted successfully!",
+                    "OK");
+                
+                await GoBackAsync();
+            }
+            else
+            {
+                await Application.Current!.MainPage!.DisplayAlert(
+                    "Error",
+                    "Failed to delete house. Please try again.",
+                    "OK");
+            }
         }
         catch (Exception ex)
         {
-            await Shell.Current.DisplayAlert("Error", $"Failed to remove tenant: {ex.Message}", "OK");
+            await Application.Current!.MainPage!.DisplayAlert(
+                "Error",
+                $"An error occurred: {ex.Message}",
+                "OK");
         }
         finally
         {
@@ -257,37 +135,8 @@ public partial class HouseManagementViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task DeleteHouse()
+    private async Task GoBackAsync()
     {
-        if (HouseId == 0) return;
-
-        var confirm = await Shell.Current.DisplayAlert(
-            "Confirm", "Are you sure you want to delete this house?", "Yes", "No");
-
-        if (!confirm) return;
-
-        try
-        {
-            IsLoading = true;
-            
-            var success = await _apiService.DeleteAsync($"/api/houses/{HouseId}");
-            if (success)
-            {
-                await Shell.Current.DisplayAlert("Success", "House deleted", "OK");
-                await Shell.Current.GoToAsync("..");
-            }
-            else
-            {
-                await Shell.Current.DisplayAlert("Error", "Failed to delete house", "OK");
-            }
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlert("Error", $"Failed to delete house: {ex.Message}", "OK");
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        await Shell.Current.GoToAsync("..");
     }
 }
