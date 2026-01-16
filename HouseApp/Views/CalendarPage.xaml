@@ -6,7 +6,25 @@
     Title="Calendar"
     BackgroundColor="{StaticResource AppBg}">
 
-	<ScrollView>
+    <Grid RowDefinitions="Auto,*">
+        
+        <!-- Header with Back Button -->
+        <Grid Grid.Row="0" BackgroundColor="#6D28D9" Padding="16,12">
+            <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                <Button Text="←" 
+                        FontSize="24"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Clicked="OnBackButtonClicked"/>
+                <Label Text="Calendar" 
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </Grid>
+
+	<ScrollView Grid.Row="1">
 		<VerticalStackLayout Padding="20" Spacing="16">
 
 			<!-- Header -->
@@ -235,4 +253,5 @@
 
 		</VerticalStackLayout>
 	</ScrollView>
+    </Grid>
 </ContentPage>

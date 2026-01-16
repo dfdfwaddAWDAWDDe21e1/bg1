@@ -9,4 +9,9 @@ public partial class ProfilePage : ContentPage
         InitializeComponent();
         BindingContext = viewModel;
     }
+
+    private async void OnBackButtonClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("///tabs/home");
+    }
 }
