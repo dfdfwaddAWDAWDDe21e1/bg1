@@ -222,7 +222,12 @@ public partial class ChatViewModel : ObservableObject
         {
             System.Diagnostics.Debug.WriteLine($"Error sending message: {ex.Message}");
             await Shell.Current.DisplayAlert("Error", $"Failed to send: {ex.Message}", "OK");
-            NewMessage = messageText; // Restore message on error
+            
+            // Only restore if user hasn't typed a new message
+            if (string.IsNullOrEmpty(NewMessage))
+            {
+                NewMessage = messageText;
+            }
         }
     }
 }
