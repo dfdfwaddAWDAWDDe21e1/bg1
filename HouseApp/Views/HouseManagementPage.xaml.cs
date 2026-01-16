@@ -46,4 +46,9 @@ public partial class HouseManagementPage : ContentPage
             }
         }
     }
+
+    private async void OnBackButtonClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("///tabs/dashboard");
+    }
 }
